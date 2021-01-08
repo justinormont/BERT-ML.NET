@@ -1,4 +1,4 @@
-Model/bertsquad8.onnx
+Model/*.onnx
 obj/
 bin/
 Properties/PublishProfiles

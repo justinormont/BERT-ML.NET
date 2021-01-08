@@ -20,23 +20,23 @@ namespace BERT.WebApi.Controllers
         [Route("predict")]
         public ActionResult<IEnumerable<string>> PredictPost(QuestionViewModel question)
         {
-            var (tokens, probability) = _bertModel.Predict(question.Context, question.Question);
+            var (bertEmbeddings1, bertEmbeddings2) = _bertModel.Predict(question.Context, question.Question);
 
             return Ok(new PredictionViewModel() {
-                Tokens = tokens,
-                Probability = probability
+                BertEmbeddings1 = bertEmbeddings1,
+                BertEmbeddings2 = bertEmbeddings2,
             });
         }
 
         [HttpGet("predict")]
         public ActionResult<IEnumerable<string>> PredictGet(string Context, string Question)
         {
-            var (tokens, probability) = _bertModel.Predict(Context, Question);
+            var (bertEmbeddings1, bertEmbeddings2) = _bertModel.Predict(Context, Question);
 
             return Ok(new PredictionViewModel()
             {
-                Tokens = tokens,
-                Probability = probability
+                BertEmbeddings1 = bertEmbeddings1,
+                BertEmbeddings2 = bertEmbeddings2,
             });
         }
     }

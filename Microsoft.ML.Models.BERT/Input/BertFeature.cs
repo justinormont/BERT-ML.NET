@@ -5,7 +5,7 @@ namespace Microsoft.ML.Models.BERT.Input
 {
     internal class BertFeature
     {
-        [VectorType(1)]
+        /*[VectorType(1)]
         [ColumnName("unique_ids_raw_output___9:0")]
         public long[] UniqueIds { get; set; }
 
@@ -19,6 +19,10 @@ namespace Microsoft.ML.Models.BERT.Input
 
         [VectorType(1, 256)]
         [ColumnName("input_ids:0")]
+        public long[] InputIds { get; set; }*/
+
+        [VectorType(1)]
+        [ColumnName("input_ids")]
         public long[] InputIds { get; set; }
     }
 }

@@ -31,17 +31,27 @@ namespace Microsoft.ML.Models.BERT
             _predictionEngine = onnxModelConfigurator.GetMlNetPredictionEngine<BertPredictionResult>();
         }
 
-        public (List<string> tokens, float probability) Predict(string context, string question)
+        //public (List<string> tokens, float probability) Predict(string context, string question)
+        public (float[] bertEmbeddings1, float[] bertEmbeddings2) Predict(string context, string question)
         {
             var tokens = _wordPieceTokenizer.Tokenize(question, context);
-            var encodedFeature = Encode(tokens);
+            BertFeature encodedFeature = Encode(tokens);
 
-            var result = _predictionEngine.Predict(encodedFeature);
+            BertPredictionResult result = new BertPredictionResult();
+
+            // Feeding RoBERTa one token at a time
+            foreach (var token in encodedFeature.InputIds)
+            {
+                var singleToken = new BertFeature() { InputIds = new[] { token } };
+                result = _predictionEngine.Predict(singleToken);
+            }
+            
             var contextStart = tokens.FindIndex(o => o.Token == WordPieceTokenizer.DefaultTokens.Separation);
 
-            var (startIndex, endIndex, probability) = GetBestPredictionFromResult(result, contextStart);
+            //var (startIndex, endIndex, probability) = GetBestPredictionFromResult(result, contextStart);
+            var (bertEmbeddings1, bertEmbedding2) = GetBestPredictionFromResult(result);
 
-            var predictedTokens = encodedFeature.InputIds
+            /*var predictedTokens = encodedFeature.InputIds
                 .Skip(startIndex)
                 .Take(endIndex + 1 - startIndex)
                 .Select(o => _vocabulary[(int)o])
@@ -49,7 +59,8 @@ namespace Microsoft.ML.Models.BERT
 
             var stichedTokens = StitchSentenceBackTogether(predictedTokens);
 
-            return (stichedTokens, probability);
+            return (stichedTokens, probability);*/
+            return (bertEmbeddings1, bertEmbedding2);
         }
 
         private List<string> StitchSentenceBackTogether(List<string> tokens)
@@ -78,7 +89,13 @@ namespace Microsoft.ML.Models.BERT
             return tokensStitched;
         }
 
-        private (int StartIndex, int EndIndex, float Probability) GetBestPredictionFromResult(BertPredictionResult result, int minIndex)
+
+        private (float[] BertEmbedding1, float[] BertEmbedding2) GetBestPredictionFromResult(BertPredictionResult result)
+        {
+            return (result.BertEmbedding1, result.BertEmbedding2);
+        }
+
+        /*private (int StartIndex, int EndIndex, float Probability) GetBestPredictionFromResult(BertPredictionResult result, int minIndex)
         {
             var bestN = _bertModelConfiguration.BestResultSize;
 
@@ -112,13 +129,18 @@ namespace Microsoft.ML.Models.BERT
                 .FirstOrDefault();
 
             return (StartIndex: item.StartLogit, EndIndex: item.EndLogit, probability);
-        }
+        }*/
 
         private BertFeature Encode(List<(string Token, int Index)> tokens)
         {
-            var padding = Enumerable
-                .Repeat(0L, _bertModelConfiguration.MaxSequenceLength - tokens.Count)
-                .ToList();
+            List<long> padding;
+
+            if (_bertModelConfiguration.MaxSequenceLength > tokens.Count)
+                padding = Enumerable
+                    .Repeat(0L, _bertModelConfiguration.MaxSequenceLength - tokens.Count)
+                    .ToList();
+            else
+                padding = new List<long>();
 
             var tokenIndexes = tokens
                 .Select(token => (long)token.Index)
@@ -137,9 +159,9 @@ namespace Microsoft.ML.Models.BERT
             return new BertFeature()
             {
                 InputIds = tokenIndexes,
-                SegmentIds = segmentIndexes,
-                InputMask = inputMask,
-                UniqueIds = new long[] { 0 }
+                //SegmentIds = segmentIndexes,
+                //InputMask = inputMask,
+                //UniqueIds = new long[] { 0 }
             };
         }
 

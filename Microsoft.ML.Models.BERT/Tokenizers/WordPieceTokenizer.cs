@@ -10,11 +10,19 @@ namespace Microsoft.ML.Models.BERT.Tokenizers
     {
         public class DefaultTokens
         {
-            public const string Padding = "";
+            // BERT
+            /*public const string Padding = "";
             public const string Unknown = "[UNK]";
             public const string Classification = "[CLS]";
             public const string Separation = "[SEP]";
-            public const string Mask = "[MASK]";
+            public const string Mask = "[MASK]";*/
+
+            // RoBERTa -- Defaults from https://huggingface.co/transformers/model_doc/roberta.html#robertatokenizer
+            public const string Padding = "<pad>";
+            public const string Unknown = "<unk>";
+            public const string Classification = "<s>";
+            public const string Separation = "</s>";
+            public const string Mask = "<mask>";
         }
 
         private readonly List<string> _vocabulary;
@@ -50,6 +58,17 @@ namespace Microsoft.ML.Models.BERT.Tokenizers
          */
         private IEnumerable<(string Token, int VocabularyIndex)> TokenizeSubwords(string word)
         {
+            
+            if (word != DefaultTokens.Separation &&
+                word != DefaultTokens.Padding &&
+                word != DefaultTokens.Unknown &&
+                word != DefaultTokens.Classification &&
+                word != DefaultTokens.Separation &&
+                word != DefaultTokens.Mask)
+            {
+                word = $"Ġ{word}"; // unsure if correct for RoBERTa
+            }
+
             if (_vocabulary.Contains(word))
             {
                 return new (string, int)[] { (word, _vocabulary.IndexOf(word)) };
@@ -58,7 +77,8 @@ namespace Microsoft.ML.Models.BERT.Tokenizers
             var tokens = new List<(string, int)>();
             var remaining = word;
 
-            while (!string.IsNullOrEmpty(remaining) && remaining.Length > 2)
+            //while (!string.IsNullOrEmpty(remaining) && remaining.Length > 2)
+            while (!string.IsNullOrEmpty(remaining))
             {
                 var prefix = _vocabulary.Where(remaining.StartsWith)
                     .OrderByDescending(o => o.Count())
@@ -71,7 +91,9 @@ namespace Microsoft.ML.Models.BERT.Tokenizers
                     return tokens;
                 }
 
-                remaining = remaining.Replace(prefix, "##");
+                // removed, since RoBERTa doesn't seem to use ## prefixes
+                //remaining = remaining.Replace(prefix, "##"); // todo: original should have been -- '##' + remaining.Substring(prefix.Length);
+                remaining = remaining.Substring(prefix.Length);
 
                 tokens.Add((prefix, _vocabulary.IndexOf(prefix)));
             }

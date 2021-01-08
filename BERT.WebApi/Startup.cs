@@ -23,8 +23,11 @@ namespace BERT.WebApi
             {
                 var modelConfig = new BertModelConfiguration()
                 {
-                    VocabularyFile = "Model/vocab.txt",
-                    ModelPath = "Model/bertsquad-10.onnx"
+                    //VocabularyFile = "Model/vocab.txt",
+                    //ModelPath = "Model/bertsquad-10.onnx",
+
+                    VocabularyFile = "Model/roberta_base_vocab.txt",
+                    ModelPath = "Model/roberta-base-11.onnx",
                 };
 
                 var model = new BertModel(modelConfig);
